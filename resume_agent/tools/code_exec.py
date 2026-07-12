@@ -5,11 +5,12 @@ Deterministic operations over LLM-produced structured data.
 The LLM does semantic matching; code_exec does arithmetic.
 """
 
-import re
 from datetime import datetime
 
 
-def _compute_score(matched: int, total: int, high_conf: int = 0, med_conf: int = 0) -> int:
+def _compute_score(
+    matched: int, total: int, high_conf: int = 0, med_conf: int = 0
+) -> int:
     """Confidence-weighted scoring: high=1.0, medium=0.5."""
     if total == 0:
         return 1
@@ -50,7 +51,9 @@ def _score_from_matches(matches: list, unmatched_requirements: list) -> dict:
     matched_count = len(matches)
 
     high_conf = sum(1 for m in matches if m.get("confidence") == "high")
-    med_conf = sum(1 for m in matches if m.get("confidence") != "high")  # default missing to medium
+    med_conf = sum(
+        1 for m in matches if m.get("confidence") != "high"
+    )  # default missing to medium
     weighted_ratio = (high_conf * 1.0 + med_conf * 0.5) / total if total else 0.0
 
     return {
@@ -60,11 +63,14 @@ def _score_from_matches(matches: list, unmatched_requirements: list) -> dict:
         "total_requirements": total,
         "high_confidence_matches": high_conf,
         "medium_confidence_matches": med_conf,
-        "matched_skills": list(dict.fromkeys(
-            ", ".join(m.get("resume_evidence", "")) if isinstance(m.get("resume_evidence"), list)
-            else str(m.get("resume_evidence", ""))
-            for m in matches
-        )),
+        "matched_skills": list(
+            dict.fromkeys(
+                skill.strip()
+                for m in matches
+                for skill in (m.get("resume_evidence", "").split(","))
+                if skill.strip()
+            )
+        ),
         "unmatched_requirements": clean_unmatched,
         "matches": matches,
     }

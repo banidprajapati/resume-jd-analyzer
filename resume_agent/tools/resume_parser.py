@@ -15,39 +15,7 @@ from concurrent.futures import TimeoutError as FutureTimeout
 import fitz  # PyMuPDF
 
 from resume_agent.agents.llm_calling import call_llm
-
-PARSE_SYSTEM_PROMPT = """Parse this resume into JSON. Return ONLY valid JSON, no other text.
-
-Schema:
-{
-  "contact_info": {"name": "", "email": "", "phone": "", "location": "", "linkedin": ""},
-  "skills": {
-    "technical": [],
-    "soft": [],
-    "tools": [],
-    "languages": []
-  },
-  "experience": [{"company": "", "title": "", "dates": "", "highlights": []}],
-  "education": [{"institution": "", "degree": "", "field": "", "dates": "", "gpa": ""}],
-  "certifications": [],
-  "summary": ""
-}
-
-Skill extraction rules:
-- Scan the ENTIRE resume: skills section, experience highlights, project descriptions, education
-- "technical": programming languages, frameworks, libraries (Python, PyTorch, React, FastAPI, etc.)
-- "tools": platforms, databases, cloud, DevOps, version control (Docker, Git, AWS, MongoDB, etc.)
-- "soft": interpersonal skills (leadership, communication, teamwork, etc.)
-- "languages": spoken languages only (English, Nepali, Spanish) — NOT programming languages
-- Each skill appears ONCE in its correct category
-
-Experience rules:
-- Include ALL roles: work, internship, volunteer, community — in one "experience" array
-- Each highlight is a single bullet point describing what was done
-
-General rules:
-- Use "" for missing strings, [] for missing lists, null for missing nested objects
-- Extract skills mentioned ANYWHERE in the resume, not just a dedicated skills section"""
+from resume_agent.agents.prompt import PARSE_SYSTEM_PROMPT
 
 
 def _extract_raw_text(filepath: str) -> str:
@@ -93,7 +61,12 @@ def _parse_pdf(filepath: str) -> dict:
     try:
         raw_text = _extract_raw_text(filepath)
     except ValueError as e:
-        return {"status": "error", "resume_parsed": False, "reason": "unreadable_pdf", "detail": str(e)}
+        return {
+            "status": "error",
+            "resume_parsed": False,
+            "reason": "unreadable_pdf",
+            "detail": str(e),
+        }
 
     if not raw_text.strip():
         return {
@@ -138,26 +111,3 @@ def resume_parser_tool(filepath: str, timeout: int = 30) -> dict:
             }
         except Exception as e:
             return {"status": "error", "reason": "unexpected_error", "detail": str(e)}
-
-
-if __name__ == "__main__":
-    import json
-    import sys
-
-    filepath = (
-        sys.argv[1]
-        if len(sys.argv) > 1
-        else r"D:\Projects\jobins\resume_agent\data\Banid Prajapati CV.pdf"
-    )
-
-    print(f"Parsing: {filepath}")
-    result = resume_parser_tool(filepath, timeout=60)
-
-    print(f"\nStatus: {result['status']}")
-    if result["status"] == "error":
-        print(f"Reason: {result['reason']}")
-        if "detail" in result:
-            print(f"Detail: {result['detail']}")
-    else:
-        if result.get("structured"):
-            print(f"\nStructured output:\n{json.dumps(result['structured'], indent=2)}")
