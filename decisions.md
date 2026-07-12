@@ -1,16 +1,12 @@
 # Engineering Decisions
 
-Each entry follows: "I considered [X] but chose [Y] because [Z]."
-
----
-
 **1. Planner + Reflection merged into one call**
 I considered making "plan" and "reflect" two separate LLM calls per loop iteration (textbook ReAct) but chose to merge them into a single JSON response, because the hard 10-call budget makes a strict two-calls-per-iteration pattern unworkable — merging roughly doubles how much real work the agent can do within the same budget, while still satisfying the requirement that progress is evaluated after every tool call.
 
 ---
 
 **2. Code execution: templated operations vs. arbitrary code**
-I considered letting the planner submit arbitrary Python code to the code execution tool but chose to constrain it to a whitelist of pre-templated operations (`score_from_matches`) invoked with JSON arguments, because a local, unsandboxed model has no safe way to guarantee arbitrary code won't touch the filesystem or network. The tool still satisfies "code execution" — it runs real deterministic logic with real timeouts — it just can't run anything outside the whitelist.
+I considered letting the planner submit arbitrary Python code but chose to constrain it to a whitelist of pre-built functions (`score_from_matches`) invoked with JSON arguments, because a small local model can't be trusted to write safe code. The tool still runs real deterministic logic with real timeouts — it just can't run anything outside the whitelist.
 
 ---
 
@@ -31,8 +27,3 @@ I considered adding a dedicated LLM call after each tool to evaluate "am I makin
 
 **6. Confidence-weighted scoring**
 I considered treating all skill matches equally but chose to weight by confidence (high=1.0, medium/default=0.5), because an exact keyword match ("Python" in resume, "Python" in JD) is meaningfully stronger than a semantic stretch ("fast learner" maps to "problem-solving skills"). The weighting produces a more nuanced score that reflects real hiring decisions.
-
----
-
-**7. Timeout mechanism**
-I considered using `signal.alarm` for enforcing tool timeouts but chose `concurrent.futures.ThreadPoolExecutor.result(timeout=...)` for the search and resume-parsing tools, because `signal.alarm` only works on the main thread on Unix and silently fails in multi-threaded or non-Unix environments — the executor approach is portable and gives a real, verifiable kill of the blocking call.
