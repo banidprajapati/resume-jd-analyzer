@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from resume_agent.agents.llm_agent import run_agent
 from resume_agent.budget.budget_enforcer import BudgetEnforcer
 
-tight = BudgetEnforcer(max_calls=3, max_cost=0.20)
+tight = BudgetEnforcer(max_calls=10, max_cost=0.20)
 result = run_agent(
     "Find a perfect 100% matching resume",
     "data/Banid Prajapati CV.pdf",
