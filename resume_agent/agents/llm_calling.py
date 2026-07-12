@@ -12,8 +12,12 @@ from openai import APIConnectionError, APIStatusError, OpenAI
 
 from resume_agent.core.config import settings
 
-MODEL_NAME = settings.LLM_MODEL
-BASE_URL = settings.LLM_BASE_URL
+_client: OpenAI | None = None
+
+
+def init_client():
+    global _client
+    _client = OpenAI(base_url=settings.LLM_BASE_URL, api_key="ollama")
 
 
 @dataclass
@@ -23,7 +27,6 @@ class LLMCallResult:
     completion_tokens: int
 
     def as_json(self) -> dict:
-        """Parse JSON from LLM output, stripping code fences defensively."""
         text = self.raw_text.strip()
         if text.startswith("```"):
             text = text.strip("`")
@@ -35,42 +38,16 @@ class LLMCallResult:
             return {"_parse_error": str(e), "_raw": self.raw_text}
 
 
-_client: OpenAI | None = None
-
-
-def _get_client() -> OpenAI:
-    global _client
-    if _client is None:
-        _client = OpenAI(base_url=BASE_URL, api_key="ollama")
-    return _client
-
-
 def call_llm(
     system_prompt: str, user_prompt: str, force_json: bool = True
 ) -> LLMCallResult:
-    """
-    Single synchronous call to the local model via OpenAI-compatible API.
-
-    Args:
-        system_prompt: System message content.
-        user_prompt: User message content.
-        force_json: If True, requests JSON output from the model.
-
-    Returns:
-        LLMCallResult with raw text and token counts.
-
-    Raises:
-        RuntimeError: On connection or API errors.
-    """
-    client = _get_client()
-
     kwargs = {}
     if force_json:
         kwargs["response_format"] = {"type": "json_object"}
 
     try:
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
+        response = _client.chat.completions.create(
+            model=settings.LLM_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -80,12 +57,12 @@ def call_llm(
         )
     except APIConnectionError as e:
         raise RuntimeError(
-            f"Cannot connect to Ollama at {BASE_URL}. Is it running? Error: {e}"
+            f"Cannot connect to Ollama at {settings.LLM_BASE_URL}. Is it running? Error: {e}"
         ) from e
     except APIStatusError as e:
         if e.status_code == 404:
             raise RuntimeError(
-                f"Model '{MODEL_NAME}' not found. Run 'ollama pull {MODEL_NAME}' first."
+                f"Model '{settings.LLM_MODEL}' not found. Run 'ollama pull {settings.LLM_MODEL}' first."
             ) from e
         raise RuntimeError(f"Ollama API error: {e}") from e
 
