@@ -37,8 +37,6 @@ from resume_agent.tools.web_search import extract_requirements, web_search_tool
 
 log = get_logger(__name__)
 
-MAX_ITERATIONS = 12
-
 
 def _dispatch_tool(action: str, action_input: dict) -> dict:
     if action == "resume_parser":
@@ -60,7 +58,9 @@ def run_agent(
     state = AgentState(goal=goal, resume_path=resume_path, jd_text=jd_text)
 
     try:
-        for step in range(1, MAX_ITERATIONS + 1):
+        step = 0
+        while True:
+            step += 1
             budget.check_before_call()
 
             user_prompt = (
@@ -169,16 +169,25 @@ def run_agent(
                 else:
                     progress_reason = f"code_exec error: {observation.get('reason')}"
 
-            # Log
+            # Log reasoning and action
             if reasoning:
-                log.info("    Reasoning: %s", reasoning)
+                log.info("Reasoning: %s", reasoning)
             if action == "resume_parser":
-                status = "ok" if progress else "FAILED"
-                log.info("  Parsing resume PDF... %s", status)
+                log.info("    Parsing resume PDF...")
             elif action == "web_search":
-                log.info("  Searching web and extracting requirements...")
+                if progress:
+                    log.info(
+                        "    Extracted %d job requirements", len(state.requirements)
+                    )
+                else:
+                    log.info("    Failed to extract requirements")
             elif action == "code_exec":
-                log.info("  Computing skill match score...")
+                if progress:
+                    log.info(
+                        "    Computed score: %d/10", state.match_result.get("score", 0)
+                    )
+                else:
+                    log.info("    Scoring failed")
 
             entry = ToolCallEntry(
                 step=step,
@@ -189,12 +198,6 @@ def run_agent(
                 reasoning=reasoning,
             )
             state.add_entry(entry)
-
-        else:
-            state.stopped_early = True
-            state.stop_reason = (
-                f"MAX_ITERATIONS ({MAX_ITERATIONS}) reached without finishing"
-            )
 
         if state.finished:
             budget.check_before_call()
