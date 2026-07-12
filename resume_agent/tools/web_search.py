@@ -2,6 +2,9 @@
 Web search tool using Tavily API.
 """
 
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
+
 from tavily import TavilyClient
 
 from resume_agent.agents.llm_calling import call_llm
@@ -11,9 +14,33 @@ from resume_agent.core.loggings import get_logger
 
 log = get_logger(__name__)
 
+SEARCH_TIMEOUT = 15  # seconds
+
 
 def _get_client() -> TavilyClient:
     return TavilyClient(api_key=settings.TAVILY_API_KEY)
+
+
+def _search(query: str) -> dict:
+    """Internal search function that runs in a thread."""
+    client = _get_client()
+    response = client.search(query=query, max_results=3)
+    results = response.get("results", [])
+
+    if not results:
+        return {"status": "ok", "results": []}
+
+    snippets = []
+    for r in results:
+        title = r.get("title", "")
+        url = r.get("url", "")
+        content = r.get("content", "")
+        snippets.append({"title": title, "url": url, "content": content})
+        log.debug("Result: %s | %s", title, url)
+        log.debug("Content: %s", content[:500])
+
+    log.debug("Web search for '%s' returned %d results", query, len(snippets))
+    return {"status": "ok", "results": snippets}
 
 
 def web_search_tool(query: str) -> dict:
@@ -24,33 +51,19 @@ def web_search_tool(query: str) -> dict:
         {"status": "ok", "results": [...]} or
         {"status": "error", "reason": "..."}
     """
-    try:
-        client = _get_client()
-        response = client.search(query=query, max_results=3)
-        results = response.get("results", [])
-
-        if not results:
-            log.debug("Web search for '%s' returned 0 results", query)
-            return {"status": "ok", "results": []}
-
-        snippets = []
-        for r in results:
-            title = r.get("title", "")
-            url = r.get("url", "")
-            content = r.get("content", "")
-            snippets.append({"title": title, "url": url, "content": content})
-            log.debug(
-                f"Result:  {title} | {url}",
-            )
-            log.debug(
-                f"Content: {content[:500]}",
-            )
-
-        log.info("Web search for '%s' returned %d results", query, len(snippets))
-        return {"status": "ok", "results": snippets}
-    except Exception as e:
-        log.error("Web search failed: %s", e)
-        return {"status": "error", "reason": str(e)}
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(_search, query)
+        try:
+            return future.result(timeout=SEARCH_TIMEOUT)
+        except FutureTimeout:
+            return {
+                "status": "error",
+                "reason": "timeout",
+                "detail": f"web search exceeded {SEARCH_TIMEOUT}s",
+            }
+        except Exception as e:
+            log.error("Web search failed: %s", e)
+            return {"status": "error", "reason": str(e)}
 
 
 def extract_requirements(search_results: list[dict], jd_text: str) -> dict:
@@ -90,7 +103,7 @@ Extract the key requirements for this role."""
             return {"status": "error", "reason": "No requirements extracted",
                     "prompt_tokens": result.prompt_tokens, "completion_tokens": result.completion_tokens}
 
-        log.info("Extracted %d requirements from web search", len(requirements))
+        log.debug("Extracted %d requirements from web search", len(requirements))
         return {"status": "ok", "requirements": requirements,
                 "prompt_tokens": result.prompt_tokens, "completion_tokens": result.completion_tokens}
  
