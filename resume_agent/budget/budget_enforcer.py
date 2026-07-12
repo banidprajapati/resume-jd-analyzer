@@ -74,5 +74,4 @@ class BudgetEnforcer:
             "total_tokens": self.total_tokens,
             "remaining_calls": self.max_calls - self.call_count,
             "remaining_budget": round(self.max_cost - self.total_cost, 4),
-            "records": self.records,
         }
