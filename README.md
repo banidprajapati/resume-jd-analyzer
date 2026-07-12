@@ -24,7 +24,7 @@ Prompts centralized in `agents/prompt.py`:
 - **Parse** — parses resume text into structured JSON (skills, experience, education).
 - **Final answer** — generates human-readable report from computed match data.
 
-Progress is checked via JSON field inspection (not a separate LLM call): `resume_parser` returns `resume_parsed: true/false`, `web_search` feeds through `extract_requirements()`, `code_exec` returns the score.
+Progress is checked via JSON field inspection of tool output (not a separate LLM call), saving budget for actual work: `resume_parser` returns `resume_parsed: true/false`, `web_search` feeds through `extract_requirements()`, `code_exec` returns the score.
 
 ## Failure Modes
 
