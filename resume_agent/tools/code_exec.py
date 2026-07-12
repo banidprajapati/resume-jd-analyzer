@@ -5,7 +5,11 @@ Deterministic operations over LLM-produced structured data.
 The LLM does semantic matching; code_exec does arithmetic.
 """
 
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from datetime import datetime
+
+CODE_EXEC_TIMEOUT = 5  # seconds
 
 
 def _compute_score(
@@ -145,10 +149,18 @@ def code_exec_tool(operation: str, args: dict) -> dict:
     if not op_fn:
         return {"status": "error", "reason": f"unknown operation: {operation}"}
 
-    try:
-        result = op_fn(args)
-        return {"status": "ok", "result": result}
-    except KeyError as e:
-        return {"status": "error", "reason": f"missing arg: {e}"}
-    except Exception as e:
-        return {"status": "error", "reason": str(e)}
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(op_fn, args)
+        try:
+            result = future.result(timeout=CODE_EXEC_TIMEOUT)
+            return {"status": "ok", "result": result}
+        except FutureTimeout:
+            return {
+                "status": "error",
+                "reason": "timeout",
+                "detail": f"code_exec exceeded {CODE_EXEC_TIMEOUT}s",
+            }
+        except KeyError as e:
+            return {"status": "error", "reason": f"missing arg: {e}"}
+        except Exception as e:
+            return {"status": "error", "reason": str(e)}
