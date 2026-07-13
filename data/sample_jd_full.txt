@@ -1,3 +1,22 @@
-We are hiring a Backend Engineer.
-Requirements: Python, SQL, Docker, Kubernetes, AWS, REST API design.
-3+ years experience preferred.
+Core Responsibilities
+Own ML projects end-to-end - from problem framing and data exploration through modeling, deployment, monitoring, and iteration.
+Design and ship production ML systems spanning churn and propensity modeling, demand forecasting, anomaly detection, pricing optimization, and recommendation - using the right tool for the job, whether that's a gradient-boosted model, a fine-tuned foundation model, or an agent-based workflow.
+Build agentic AI workflows that automate decision-making across the business - including multi-agent systems, tool-using agents, and human-in-the-loop pipelines that combine LLM reasoning with deterministic logic and traditional ML.
+Leverage modern AI development tooling (AI coding assistants, agentic IDEs, automated evaluation harnesses, MLOps platforms) as a core part of your engineering practice - not an afterthought.
+Apply foundation models and domain-specific ML to extract signals from structured data, text, images, audio, or multimodal inputs depending on the problem at hand.
+Design rigorous evaluations for both deterministic models and probabilistic AI systems - offline metrics, online A/B tests, LLM-as-judge frameworks, and regression suites for non-deterministic outputs.
+Partner with data and platform engineers to build robust pipelines, feature stores, and serving infrastructure supporting both classical ML and modern AI workloads.
+Communicate effectively with technical and non-technical stakeholders - translating model behavior, tradeoffs, and risks into decisions the business can act on.
+(Senior) Set technical direction for an area of the ML stack, mentor mid-level and junior engineers, lead design reviews, and influence the team's tooling, evaluation standards, and architectural choices.
+
+Technical Requirements
+Bachelor's or Master's degree in Computer Science, Mathematics, Statistics, or a related quantitative field - or equivalent practical experience.
+3+ years of applied data science / ML experience with a track record of shipping models to production. (Senior: 5+ years) including ownership of complex systems and demonstrable technical leadership.
+Strong programming proficiency in Python, including modern ML/AI libraries (PyTorch or JAX, scikit-learn, Hugging Face, pandas etc.).
+Solid grounding in statistical modeling, experimentation, and classical ML - regression, tree-based methods (Random Forest, XGBoost, LightGBM), time series forecasting, and anomaly detection.
+Hands-on experience with at least one specialty area: NLP and LLMs, Computer Vision, or Multimodal systems. We're domain-agnostic - depth in any of these is valued.
+Practical experience working with foundation models and LLM APIs - prompt design, structured outputs, function calling, retrieval-augmented generation (RAG), and fine-tuning where appropriate.
+Comfort with modern AI development workflows - using AI coding assistants and agentic IDEs (Claude Code, Cursor, Copilot, or similar) as a daily part of your engineering practice.
+Experience with data engineering fundamentals and big-data tooling such as PySpark, Databricks, or equivalent distributed compute frameworks.
+Familiarity with MLOps and LLMOps practices - version control for models and prompts, experiment tracking, CI/CD for ML, monitoring, and evaluation pipelines.
+(Senior) Demonstrated ability to make architectural decisions, navigate ambiguity, and influence cross-functional partners on technical strategy.
